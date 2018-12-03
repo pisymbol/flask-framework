@@ -1,0 +1,7 @@
+/*
+ * Bootstrap doc says we must pad the navbar manually so it
+ * doesn't cover content on top of the page.
+ */
+body { 
+    padding-top: 65px; 
+}
