@@ -6,6 +6,7 @@
 
 import feedparser
 import io
+import os
 import pandas as pd
 import re
 import requests
@@ -39,6 +40,7 @@ NASDAQ_LISTED = 'nasdaqlisted.txt'
 TICKERS = []
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'tdi')
 
 def ticker2name(ticker):
     """ Convert ticker to company name using Yahoo! Finance API """
@@ -183,6 +185,4 @@ if __name__ == '__main__':
     tickers_init()
 
     # FIXME: Move to separate settings file.
-    app.secret_key = 'tdi'
-    app.config['SESSION_TYPE'] = 'filesystem'
     app.run(port=33507, debug=True) # Heroku reserved port for flask applications
