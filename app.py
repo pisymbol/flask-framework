@@ -38,6 +38,7 @@ NASDAQ_LISTED = 'nasdaqlisted.txt'
 
 # Global list of ticker symbols
 TICKERS = []
+TICKERS_INIT = False
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'tdi')
@@ -53,6 +54,27 @@ def ticker2name(ticker):
         if result['symbol'] == ticker:
             return result['name']
     return ""
+
+def tickers_init():
+    """ Dynamically build a stock ticker catalog """
+
+    # NOTE: Failure is perfeclty fine. This is strictly for convenience.
+    global TICKERS_INIT
+    if not TICKERS_INIT:
+        for txt in [NASDAQ_LISTED, NASDAQ_OTHER]:
+            try:
+                file_txt, headers = urllib.request.urlretrieve(NASDAQ_SYMBOL_FTP + '/' + txt)
+                if file_txt:
+                    with open(file_txt, 'r') as f:
+                        # Skip header and last line which is just a useless 'File Creation' entry
+                        for line in f.readlines()[1:-1]:
+                            TICKERS.append(line.split('|')[0].strip())
+                    os.unlink(file_txt)
+            except:
+                pass
+        sorted(TICKERS)
+
+    TICKERS_INIT = True
 
 def get_news(ticker):
     """ Get recent headlines from Yahoo! Finance RSS Feed """
@@ -135,6 +157,9 @@ def index():
     plot_div = ""
     articles = ""
 
+    # Initialize the ticker registry (only once though)
+    tickers_init()
+
     # Parse form data
     if request.method == 'POST':
         ticker = request.form.get('ticker').strip().upper()
@@ -162,27 +187,6 @@ def index():
 def about():
   return render_template('about.html')
 
-def tickers_init():
-    """ Dynamically build a stock ticker catalog """
-
-    # NOTE: Failure is perfeclty fine. This is strictly for convenience.
-    for txt in [NASDAQ_LISTED, NASDAQ_OTHER]:
-        try:
-            file_txt, headers = urllib.request.urlretrieve(NASDAQ_SYMBOL_FTP + '/' + txt)
-            if file_txt:
-                with open(file_txt, 'r') as f:
-                    # Last line is just a useless 'File Creation' entry
-                    for line in f.readlines()[:-1]:
-                        TICKERS.append(line.split('|')[0].strip())
-                os.unlink(file_txt)
-        except:
-            pass
-
-    if TICKERS:
-        sorted(TICKERS)
-
 if __name__ == '__main__':
-    tickers_init()
-
     # FIXME: Move to separate settings file.
     app.run(port=33507, debug=True) # Heroku reserved port for flask applications
